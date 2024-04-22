@@ -31,6 +31,7 @@ def generate_launch_description():
 
     bringup_dir = get_package_share_directory('nvblox_examples_bringup')
     nav2_bringup_dir = get_package_share_directory('nav2_bringup')
+    mimawara_description_dir = get_package_share_directory('mimawari_bot_description')
 
     # Launch Arguments
     run_rviz_arg = DeclareLaunchArgument(
@@ -98,7 +99,7 @@ def generate_launch_description():
     rviz_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(
             bringup_dir, 'launch', 'rviz', 'rviz.launch.py')]),
-        launch_arguments={'config_name': 'realsense_example.rviz',
+        launch_arguments={'config_name': 'realsense_mimawari.rviz',
                           'global_frame': global_frame}.items(),
         condition=IfCondition(LaunchConfiguration('run_rviz')))
     
@@ -107,7 +108,13 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(os.path.join(
             bringup_dir, 'launch', 'nav2', 'nav2_isaac_sim.launch.py')),
         launch_arguments={'global_frame': global_frame}.items(),
-        condition=IfCondition(LaunchConfiguration('run_nav2')))    
+        condition=IfCondition(LaunchConfiguration('run_nav2')))
+    
+    mimawari_bot_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(
+            mimawara_description_dir, 'launch', 'display.launch.py')),
+        launch_arguments={}.items(),
+        condition=IfCondition(LaunchConfiguration('run_rviz')))    
 
     return LaunchDescription([
         run_rviz_arg,
@@ -121,5 +128,6 @@ def generate_launch_description():
         nvblox_launch,
         bag_play,
         nav2_launch,
+        mimawari_bot_launch,
         rviz_launch,
         ])
