@@ -105,7 +105,7 @@ fi
 
 PLATFORM="$(uname -m)"
 
-BASE_NAME="isaac_ros_dev-$PLATFORM"
+BASE_NAME="isaac_ros_rosbridge-$PLATFORM"
 CONTAINER_NAME="$BASE_NAME-container"
 
 # Remove any exited containers.
@@ -118,30 +118,6 @@ if [ "$(docker ps -a --quiet --filter status=running --filter name=$CONTAINER_NA
     print_info "Attaching to running container: $CONTAINER_NAME"
     docker exec -i -t -u admin --workdir /workspaces/isaac_ros-dev $CONTAINER_NAME /bin/bash $@
     exit 0
-fi
-
-# Build image
-IMAGE_KEY=ros2_humble
-if [[ ! -z "${CONFIG_IMAGE_KEY}" ]]; then
-    IMAGE_KEY=$CONFIG_IMAGE_KEY
-fi
-
-BASE_IMAGE_KEY=$PLATFORM.user
-if [[ ! -z "${IMAGE_KEY}" ]]; then
-    BASE_IMAGE_KEY=$PLATFORM.$IMAGE_KEY
-
-    # If the configured key does not have .user, append it last
-    if [[ $IMAGE_KEY != *".user"* ]]; then
-        BASE_IMAGE_KEY=$BASE_IMAGE_KEY.user
-    fi
-fi
-
-print_info "Building $BASE_IMAGE_KEY base as image: $BASE_NAME using key $BASE_IMAGE_KEY"
-$ROOT/build_base_image.sh $BASE_IMAGE_KEY $BASE_NAME '' '' ''
-
-if [ $? -ne 0 ]; then
-    print_error "Failed to build base image: $BASE_NAME, aborting."
-    exit 1
 fi
 
 # Map host's display socket to docker
@@ -180,17 +156,8 @@ if [[ $PLATFORM == "aarch64" ]]; then
     fi
 fi
 
-# Optionally load custom docker arguments from file
-DOCKER_ARGS_FILE="$ROOT/.isaac_ros_dev-dockerargs"
-if [[ -f "$DOCKER_ARGS_FILE" ]]; then
-    print_info "Using additional Docker run arguments from $DOCKER_ARGS_FILE"
-    readarray -t DOCKER_ARGS_FILE_LINES < $DOCKER_ARGS_FILE
-    for arg in "${DOCKER_ARGS_FILE_LINES[@]}"; do
-        DOCKER_ARGS+=($(eval "echo $arg | envsubst"))
-    done
-fi
-
 # Run container from image
+#    --entrypoint /usr/local/bin/scripts/workspace-mimawari-entrypoint.sh \   
 print_info "Running $CONTAINER_NAME"
 docker run -it --rm \
     --privileged \
@@ -202,7 +169,7 @@ docker run -it --rm \
     --name "$CONTAINER_NAME" \
     --runtime nvidia \
     --user="admin" \
-    --entrypoint /usr/local/bin/scripts/workspace-entrypoint.sh \
+    --entrypoint /workspaces/isaac_ros-dev/src/isaac_ros_common/docker/scripts/workspace-rosbridge-entrypoint.sh \
     --workdir /workspaces/isaac_ros-dev \
     $@ \
     $BASE_NAME \
